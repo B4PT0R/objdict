@@ -48,7 +48,7 @@ d={
     'profile':{
         'name':'John',
         'hobbies':[
-            {'type':'sport','title':'badmington'},
+            {'type':'sport','title':'tennis'},
             {'type':'music','title':'guitar playing'}
         ]
     }
