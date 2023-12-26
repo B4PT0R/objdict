@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.1.1",
     author="Baptiste Ferrand",
     author_email="bferrand.maths@gmail.com",
-    description="A custom object dictionary module that allows attribute-style access to dictionary items.",
+    description="A custom wrapper object around dict that allows attribute-style access to dictionary items and support for nested JSON data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/B4PT0R/objdict",
