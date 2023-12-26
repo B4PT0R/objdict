@@ -1,6 +1,6 @@
 # objdict
 
-`objdict` is a Python module that provides a class for conveniently manipulating dictionaries or dict-based JSON nested structures using attribute-like syntax. It is intended mostly to ease the manipulation of JSON data, web requests responses, configuration files, and more.
+`objdict-bf` is a Python module that provides a class for conveniently manipulating dictionaries or dict-based JSON nested structures using attribute-like syntax. It is intended mostly to ease the manipulation of JSON data, web requests responses, configuration files, and more.
 
 ## Features
 
@@ -12,7 +12,7 @@
 ## Installation
 
 ```bash
-pip install objdict-bferrand
+pip install objdict-bf
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ pip install objdict-bferrand
 Here's a simple example of how to use `objdict`:
 
 ```python
-from objdict import objdict
+from objdict_bf import objdict
 
 # Create an objdict with some initial data
 data = objdict({'name': 'John', 'age': 30, 'location': 'New York'})
