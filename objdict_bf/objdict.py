@@ -318,7 +318,7 @@ class objdict(MutableMapping):
         return cls(json.loads(json_string))
     
     def dumps(self):
-        return json.dumps(self.to_dict(),indent=4)
+        return json.dumps(self.to_dict(),indent=4,ensure_ascii=False)
     
     @classmethod
     def load(cls,file):
@@ -329,11 +329,11 @@ class objdict(MutableMapping):
         else:
             raise ValueError("You must provide a json file path before loading from a file.")
         
-    def dump(self,file=None):
-        file=file or self._file
-        if isinstance(file,str) and file.endswith(".json"):
-            with open(file,'w') as f:
-                json.dump(self.to_dict(),f,indent=4)
+    def dump(self, file=None):
+        file = file or self._file
+        if isinstance(file, str) and file.endswith(".json"):
+            with open(file, 'w', encoding='utf-8') as f:
+                json.dump(self.to_dict(), f, indent=4,ensure_ascii=False)
         else:
             raise ValueError("You must provide a json file path before dumping to a file.")
 
