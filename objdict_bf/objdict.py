@@ -188,7 +188,10 @@ class objdict(MutableMapping):
             del self._data_dict[key]
 
     def __getattr__(self, key):
-        return self[key]
+        if hasattr(super(),key) or key.startswith('__'):
+            return getattr(super(),key)
+        else:
+            return self[key]
 
     def __setattr__(self, key, value):
         if key =='_use_default':
@@ -209,6 +212,8 @@ class objdict(MutableMapping):
                 super().__setattr__(key, value)
             else:
                 raise TypeError("The '_data_dict' attribute must be set to a dict object with valid identifiers as keys.")
+        elif hasattr(super(),key) or key.startswith('__'):
+            super().__setattr__(key,value)
         else:
             self[key] = value
 
