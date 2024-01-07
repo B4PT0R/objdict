@@ -45,13 +45,15 @@ def is_valid_dict(dic):
 
 class objdict(MutableMapping):
     """
-    
+    Class implementing an attribute-style access dictionary.
+    Provides support for converting nested structures to and from objdict and dict.
+    Provides support for json de/serialization to and from a json string or a json file. 
     """
 
     @staticmethod
     def to_objdict(item):
         """
-        converts to objdict if item is a valid dict 
+        Converts to objdict if item is a valid dict 
         """
         if is_valid_dict(item):
             return objdict(item)
@@ -61,7 +63,7 @@ class objdict(MutableMapping):
     @staticmethod
     def to_dict(item):
         """
-        converts to dict if item is an objdict
+        Converts to dict if item is an objdict
         """
         if isinstance(item,objdict):
             return item._data_dict
