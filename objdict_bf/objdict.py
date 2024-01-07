@@ -44,6 +44,9 @@ def is_valid_dict(dic):
     return isinstance(dic, dict) and all(is_valid_key(key) for key in dic)
 
 class objdict(MutableMapping):
+    """
+    
+    """
 
     @staticmethod
     def to_objdict(item):
@@ -103,12 +106,14 @@ class objdict(MutableMapping):
         return item
 
     def __init__(self, *args,_use_default=False,_default=None,_file=None, **kwargs):
-        """Initialize the objdict with key-value pairs as kwargs, or dicts/objdicts/iterables passed as args."""
+        """
+        Initialize the objdict with key-value pairs as kwargs, or dicts/objdicts/iterables passed as args.
+        If the fisrt unamed arg is a dict or objdict object, it will be permanently synchronized (same object adress) to the internal _data_dict.
+        """
         self._use_default=_use_default # use the default value generator
         self._default=_default # default value or default value generator function
         self._file=_file #optional json file path for direct dumping
         if args:
-            #If the fisrt unamed arg is a dict or objdict object, it will be permanently synchronized (same object adress) to the internal _data_dict
             if isinstance(args[0], dict):
                 if is_valid_dict(args[0]):
                     self._data_dict = args[0]
@@ -151,7 +156,7 @@ class objdict(MutableMapping):
     
     def set_data_dict(self,dic):
         """
-        set the internal _data_dict to a dict if suitable
+        Set the internal _data_dict to a dict if suitable
         """
         if is_valid_dict(dic):
             self._data_dict=dic
@@ -160,7 +165,7 @@ class objdict(MutableMapping):
         
     def set_json_file(self,file):
         """
-        set the internal _file reference to a json file path
+        Set the internal _file reference to a json file path
         """
         if isinstance(file,str) and file.endswith(".json"):
             self._file=file
@@ -188,12 +193,18 @@ class objdict(MutableMapping):
             del self._data_dict[key]
 
     def __getattr__(self, key):
+        """
+        Support for attribute-style access to key:value pairs.
+        """
         if hasattr(super(),key) or key.startswith('__'):
             return getattr(super(),key)
         else:
             return self[key]
 
     def __setattr__(self, key, value):
+        """
+        Support for attribute-style setting of key:value pairs
+        """
         if key =='_use_default':
             if isinstance(value,bool):
                 super().__setattr__(key,value)
@@ -320,21 +331,40 @@ class objdict(MutableMapping):
     
     @classmethod
     def loads(cls,json_string):
-        return cls(json.loads(json_string))
+        """
+        Creates a new objdict instance by deserializing a dict-like json string
+        """
+        data=json.loads(json_string)
+        if is_valid_dict(data):
+            return cls(data)
+        else:
+            raise ValueError("The json data must be a valid dict to be deserialized into an objdict.")
     
     def dumps(self):
+        """
+        Serializes an objdict into a json string
+        """
         return json.dumps(self.to_dict(),indent=4,ensure_ascii=False)
     
     @classmethod
     def load(cls,file):
+        """
+        Creates a new objdict instance by deserializing a json file
+        """
         if isinstance(file,str) and file.endswith(".json"):
             with open(file,'r') as f:
                 data=json.load(f)
-            return cls(data,_file=file)
+            if is_valid_dict(data):
+                return cls(data,_file=file)
+            else:
+                raise ValueError("The json data must be a valid dict to be deserialized into an objdict.")
         else:
             raise ValueError("You must provide a json file path before loading from a file.")
         
     def dump(self, file=None):
+        """
+        Serializes the objdict into a json file 
+        """
         file = file or self._file
         if isinstance(file, str) and file.endswith(".json"):
             with open(file, 'w', encoding='utf-8') as f:
