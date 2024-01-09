@@ -1,16 +1,21 @@
 """
 Module providing an objdict class allowing to conveniently manipulate dictionaries or dict-based JSON nested structures using attribute-like syntax.
-Intended mostly to ease manipulation of JSON data, web requests responses, configuration files...
+Intended mostly to ease manipulation of JSON data, web requests responses, configuration files, fast prototyping...
 If the first argument passed at instantiation is a dict, the resulting objdict will use this dict as its internal data storage.
 This ensures that any modification on either object is reflected on the other.
 Provides utility methods for dict to objdict, and objdict to dict recursive conversion of nested structures.
-Supports JSON serialization and deserialization:
-- from a JSON string via .dumps() and .loads() methods.
-- from a JSON file via .dump() and load() methods
+Supports json and jsonpickle serialization and deserialization:
+- from a json string via .dumps() and .loads() methods.
+- from a json file via .dump() and load() methods
 """
 
+import jsonpickle
+jsonpickle.set_preferred_backend('json')
+jsonpickle.set_encoder_options('json', indent=4,ensure_ascii=False)
 import json
 import re
+import os
+import inspect
 from collections.abc import MutableMapping
 
 def get_keys(obj):
@@ -107,7 +112,7 @@ class objdict(MutableMapping):
                 item[key] = objdict.to_objdict_rec(item[key])
         return item
 
-    def __init__(self, *args,_use_default=False,_default=None,_file=None, **kwargs):
+    def __init__(self, *args,_use_default=False,_default=None,_file=None,_auto_self=False,_use_jsonpickle=False, **kwargs):
         """
         Initialize the objdict with key-value pairs as kwargs, or dicts/objdicts/iterables passed as args.
         If the fisrt unamed arg is a dict or objdict object, it will be permanently synchronized (same object adress) to the internal _data_dict.
@@ -115,6 +120,8 @@ class objdict(MutableMapping):
         self._use_default=_use_default # use the default value generator
         self._default=_default # default value or default value generator function
         self._file=_file #optional json file path for direct dumping
+        self._auto_self=_auto_self #allows to auto-pass the objdict instance to callable items, mimicking object methods behavior
+        self._use_jsonpickle=_use_jsonpickle
         if args:
             if isinstance(args[0], dict):
                 if is_valid_dict(args[0]):
@@ -182,7 +189,17 @@ class objdict(MutableMapping):
                 item=objdict.default(key,self._default)
             else:
                 raise KeyError(f"Invalid key: '{key}'")
-        return objdict.to_objdict_rec(item)
+        if callable(item) and self._auto_self:
+            sig = inspect.signature(item)
+            params = list(sig.parameters.values())
+            if params and params[0].name == 'self':
+                def wrapper(*args,**kwargs):
+                    return item(self,*args,**kwargs)
+                return wrapper
+            else:
+                return item
+        else:
+            return objdict.to_objdict_rec(item)
 
     def __setitem__(self, key, value):
         if is_valid_key(key):
@@ -212,6 +229,11 @@ class objdict(MutableMapping):
                 super().__setattr__(key,value)
             else:
                 raise TypeError("The '_use_default' attribute must be set to a boolean value.")
+        elif key =='_use_jsonpickle':
+            if isinstance(value,bool):
+                super().__setattr__(key,value)
+            else:
+                raise TypeError("The '_use_jsonpickle' attribute must be set to a boolean value.")
         elif key=='_default':
             super().__setattr__(key,value)
         elif key=='_file':
@@ -332,47 +354,68 @@ class objdict(MutableMapping):
         return reversed(self._data_dict)
     
     @classmethod
-    def loads(cls,json_string):
+    def loads(cls,json_string,use_jsonpickle=False):
         """
         Creates a new objdict instance by deserializing a dict-like json string
         """
-        data=json.loads(json_string)
+        if use_jsonpickle:
+            data=jsonpickle.decode(json_string)
+        else:
+            data=json.loads(json_string)
+            
         if is_valid_dict(data):
-            return cls(data)
+            return cls(data,_use_jsonpickle=use_jsonpickle)
         else:
             raise ValueError("The json data must be a valid dict to be deserialized into an objdict.")
     
-    def dumps(self):
+    def dumps(self,use_jsonpickle=False):
         """
         Serializes an objdict into a json string
         """
-        return json.dumps(self.to_dict(),indent=4,ensure_ascii=False)
+        use_jsonpickle=use_jsonpickle or self._use_jsonpickle
+        self._use_jsonpickle=use_jsonpickle
+        if self._use_jsonpickle:
+            return jsonpickle.encode(self.to_dict())
+        else:
+            return json.dumps(self.to_dict(),indent=4,ensure_ascii=False)
     
     @classmethod
-    def load(cls,file):
+    def load(cls,file,use_jsonpickle=False):
         """
         Creates a new objdict instance by deserializing a json file
         """
-        if isinstance(file,str) and file.endswith(".json"):
-            with open(file,'r') as f:
-                data=json.load(f)
+        if isinstance(file,str) and os.path.isfile(file) and file.endswith(".json"):
+            if use_jsonpickle:
+                with open(file,'r') as f:
+                    data=jsonpickle.decode(f.read())
+            else:
+                with open(file,'r') as f:
+                    data=json.load(f)
+
             if is_valid_dict(data):
-                return cls(data,_file=file)
+                return cls(data,_file=file,_use_jsonpickle=use_jsonpickle)
             else:
                 raise ValueError("The json data must be a valid dict to be deserialized into an objdict.")
         else:
-            raise ValueError("You must provide a json file path before loading from a file.")
+            raise ValueError("You must provide a valid json file path before loading from a file.")
         
-    def dump(self, file=None):
+    def dump(self, file=None,use_jsonpickle=False):
         """
         Serializes the objdict into a json file 
         """
+        use_jsonpickle=use_jsonpickle or self._use_jsonpickle
+        self._use_jsonpickle=use_jsonpickle
         file = file or self._file
-        if isinstance(file, str) and file.endswith(".json"):
-            with open(file, 'w', encoding='utf-8') as f:
-                json.dump(self.to_dict(), f, indent=4,ensure_ascii=False)
+        self._file=file
+        if isinstance(file, str) and os.path.isdir(os.path.dirname(file)) and file.endswith(".json"):
+            if self._use_jsonpickle:
+                with open(file, 'w', encoding='utf-8') as f:
+                    f.write(jsonpickle.encode(self.to_dict()))  
+            else:  
+                with open(file, 'w', encoding='utf-8') as f:
+                    json.dump(self.to_dict(), f, indent=4,ensure_ascii=False)
         else:
-            raise ValueError("You must provide a json file path before dumping to a file.")
+            raise ValueError("You must provide a valid json file path before dumping to a file.")
 
     
 MutableMapping.register(objdict)
