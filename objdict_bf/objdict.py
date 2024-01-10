@@ -173,13 +173,13 @@ class objdict(MutableMapping):
             return _default
         
     @staticmethod
-    def default_default(self):
+    def child_instance(self):
         """
-        Default strategy to generate values for missing keys as child objdict instances inheriting the parent's properties 
+        Convenience default value generator for missing keys: returns child objdict instances inheriting the parent's properties.
         """
-        return objdict(_use_default=True,_default=objdict.default_default,_auto_self=self._auto_self,_use_jsonpickle=self._use_jsonpickle)
+        return objdict(_use_default=True,_default=objdict.child_instance,_auto_self=self._auto_self,_use_jsonpickle=self._use_jsonpickle)
 
-    def __init__(self, *args,_use_default=False,_default=default_default,_file=None,_auto_self=False,_use_jsonpickle=False, **kwargs):
+    def __init__(self, *args,_use_default=False,_default=None,_file=None,_auto_self=False,_use_jsonpickle=False, **kwargs):
         """
         Initialize the objdict with key-value pairs as kwargs, or dicts/objdicts/iterables passed as args.
         If the fisrt unamed arg is a dict or objdict object, it will be permanently synchronized (same object adress) to the internal _data_dict.
@@ -412,7 +412,7 @@ class objdict(MutableMapping):
         return reversed(self._data_dict)
     
     @classmethod
-    def loads(cls,json_string,_file=None,_use_jsonpickle=False,_use_default=False,_default=default_default,_auto_self=False):
+    def loads(cls,json_string,_file=None,_use_jsonpickle=False,_use_default=False,_default=None,_auto_self=False):
         """
         Creates a new objdict instance by deserializing a dict-like json string
         """
@@ -437,7 +437,7 @@ class objdict(MutableMapping):
             return json.dumps(self.to_dict(),indent=4,ensure_ascii=False)
     
     @classmethod
-    def load(cls,_file,_use_jsonpickle=False,_use_default=False,_default=default_default,_auto_self=False):
+    def load(cls,_file,_use_jsonpickle=False,_use_default=False,_default=None,_auto_self=False):
         """
         Creates a new objdict instance by deserializing a json file
         """

@@ -130,6 +130,12 @@ data.dump()
 
 
 #Default value when accessing a missing key
+obj=objdict(_use_default=True)
+
+#Will return None and won't raise a KeyError
+print(obj.a) #Output: None
+
+#Or, choose a default value
 obj=objdict(_use_default=True,_default=3)
 print(obj.a) #Output: 3
 
@@ -137,10 +143,11 @@ print(obj.a) #Output: 3
 default_gen=lambda key: f"Missing key: {key}" 
 obj=objdict(_use_default=True,_default=default_gen)
 print(obj.a) #Output: "Missing key: a"
+print(obj.b) #Output: "Missing key: b"
 
 #Or pass a default value generator whose output depends on the current state/content of the objdict
-#must have 'self' in its signature
-#use 'self' as the keyword refering to the current objdict instance
+#Must have 'self' in its signature
+#Will use 'self' as the keyword refering to the current objdict instance
 def default_gen(self):
     if 'a' in self:
         return self.a.value
@@ -152,28 +159,22 @@ print(obj.a) #Output: {'value':5}
 print(obj.b) #Output: 5
 
 #Accepted signature of default value generators are () ; (self,); (key,) ; (self,key)
-#This allows implementing complex context aware and key-dependant logic for default value attribution. 
+#This allows implementing context-aware and key-dependant logic for default value attribution. 
 #Any other signature will be considered invalid and will fall back to assign the callable itself as the default value for all keys.
 
-#Using a default value generator to create new child objdict instances inheriting the parent's setting when accessing missing keys
-def default_default(self):
-    return objdict(_use_default=True,_default=default_default,_use_jsonpickle=self._use_jsonpickle,_auto_self=self._auto_self)
+#Using a default value generator to create new child objdict instances inheriting the parent's settings when accessing missing keys
+def child_instance(self):
+    return objdict(_use_default=True,_default=child_instance,_use_jsonpickle=self._use_jsonpickle,_auto_self=self._auto_self)
 
-obj=objdict(_use_default=True,_default=default_default,_use_jsonpickle=True)
+obj=objdict(_use_default=True,_default=child_instance,_use_jsonpickle=True,_auto_self=False)
 obj.a.b.c=3
 print(obj) #Output: {'a':{'b':{'c':3}}}
 #child elements inherit the chosen parent properties
 print(obj.a.b._use_jsonpickle) #Output: True
 print(obj.a.b._auto_self) #Output: False
 
-#This last behavior is the default one (implemented by the objdict.default_default static method) if you set _use_default to True without specifying a _default parameter
-#Choose explicitely _default=None if you want to pass None as a default value
-
-obj=objdict(_use_default=True)
-print(isinstance(obj.a,objdict)) #Output: True
-
-obj=objdict(_use_default=True,_default=None)
-print(obj.a is None) #Output: True
+#The child_instance generator hard coded above is already implemented in the module as objdict.child_instance which you may pass as _default parameter
+obj=objdict(_use_default=True,_default=objdict.child_instance)
 
 #--------------------------------Mock objects-------------------------------
 
