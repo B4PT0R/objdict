@@ -111,6 +111,36 @@ class objdict(MutableMapping):
             for key in get_keys(item):
                 item[key] = objdict.to_objdict_rec(item[key])
         return item
+    
+    @staticmethod
+    def default(obj,key,_default):
+        """
+        Special method used internaly to deal with setting default values.
+        if _default is a callable with only 'self' or 'key' in its signature, uses this callable to generate default values depending on the state of the object and the key passed
+        else use _default as the default value for all keys
+        """
+        if callable(_default):
+            sig=inspect.signature(_default)
+            params=sig.parameters
+            if not params:
+                return _default()
+            elif all(param=='key' for param in params):
+                return _default(key)
+            elif all(param=='self' for param in params):
+                return _default(obj)
+            elif all(param in ['self','key'] for param in params):
+                return _default(self=obj,key=key)
+            else:
+                return _default
+        else:
+            return _default
+        
+    @staticmethod
+    def default_default(self):
+        """
+        Default strategy to generate values for missing keys as child objdict instances inheriting the parent's properties 
+        """
+        return objdict(_use_default=True,_default=objdict.default_default,_auto_self=self._auto_self,_use_jsonpickle=self._use_jsonpickle)
 
     def __init__(self, *args,_use_default=False,_default=None,_file=None,_auto_self=False,_use_jsonpickle=False, **kwargs):
         """
@@ -118,7 +148,7 @@ class objdict(MutableMapping):
         If the fisrt unamed arg is a dict or objdict object, it will be permanently synchronized (same object adress) to the internal _data_dict.
         """
         self._use_default=_use_default # use the default value generator
-        self._default=_default # default value or default value generator function
+        self._default=_default or objdict.default_default # default value or default value generator function
         self._file=_file #optional json file path for direct dumping
         self._auto_self=_auto_self #allows to auto-pass the objdict instance to callable items, mimicking object methods behavior
         self._use_jsonpickle=_use_jsonpickle
@@ -145,17 +175,7 @@ class objdict(MutableMapping):
         #update with kwargs
         self.update(kwargs)
     
-    @staticmethod
-    def default(key,_default):
-        """
-        Special method used internaly to deal with setting default values.
-        if _default is a callable, uses this callable to generate default values depending on the key passed
-        else use _default as the default value for all keys
-        """
-        if callable(_default):
-            return _default(key)
-        else:
-            return _default
+
 
     def to_dict(self):
         """
@@ -186,7 +206,7 @@ class objdict(MutableMapping):
             item=self._data_dict[key]
         else:
             if self._use_default:
-                item=objdict.default(key,self._default)
+                item=objdict.default(self,key,self._default)
                 self[key]=item
             else:
                 raise KeyError(f"Invalid key: '{key}'")
@@ -290,7 +310,7 @@ class objdict(MutableMapping):
 
     def pop(self, key, default=None):
         default=default or self._default
-        value=self._data_dict.pop(key, objdict.default(key,default))
+        value=self._data_dict.pop(key, objdict.default(self,key,default))
         return objdict.to_objdict_rec(value)
 
     def clear(self):
@@ -326,7 +346,7 @@ class objdict(MutableMapping):
     def setdefault(self, key, default=None):
         default=default or self._default
         if key not in self:
-            self[key] = objdict.default(key,default)
+            self[key] = objdict.default(self,key,default)
         return self[key]
 
     def popitem(self):
@@ -335,7 +355,7 @@ class objdict(MutableMapping):
 
     @classmethod
     def fromkeys(cls, iterable, value=None):
-        return cls({key: objdict.default(key,value) for key in iterable})
+        return cls({key: objdict.default(None,key,value) for key in iterable})
 
     # Python 3.9 and newer
     def __ior__(self, other):

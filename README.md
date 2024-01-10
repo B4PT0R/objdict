@@ -8,13 +8,28 @@
 - Synchronization with the original dictionary if passed at instantiation.
 - Utility methods for recursive conversion of nested structures to and from `objdict` and `dict`.
 - JSON serialization and deserialization methods for both strings and files with optional jsonpickle support.
-- optional object-like behavior, by auto-passing the instance as 'self' to callable attributes.
+- optional object-like behavior, by auto-passing the instance as 'self' to callable attributes with 'self' in their signature.
 
 ## Installation
 
 ```bash
 pip install objdict-bf
 ```
+
+## Signature of the constructor
+
+```python
+objdict(*args,_use_default=False,_default=None,_file=None,_use_jsonpickle=False,_auto_self=False,**kwargs)
+```
+
+Parameters:
+`*args`: either dicts, objdicts or iterables on key:value pairs
+`_use_default`: boolean, determines if a default value is attributed to missing keys
+`_default`: any value. If callable, the callable will be used to generate default values
+`_file`: reference to a json file path for dumping
+`_use_jsonpicke`: boolean. Determines if jsonpickle is used for serialization when dumping.
+`_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable attributes with 'self' in their signature (mocked object behavior).
+
 
 ## Usage
 
@@ -100,7 +115,39 @@ data.user="dummy_username"
 #dump changes to 'my_json_file.json' 
 data.dump()
 
-#Using it as a pseudo-object with context aware methods thanks to the _auto_self parameter which automatically passes the objdict instance as 'self' to callable attributes having 'self' in their signature
+#Default value when accessing a missing key
+obj=objdict(_use_default=True,_default=3)
+print(obj.a) #Output: 3
+
+#Or pass a default value generator depending on the key (must have 'key' in its signature)
+default_gen=lambda key: f"Missing key: {key}" 
+obj=objdict(_use_default=True,_default=default_gen)
+print(obj.a) #Output: "Missing key: a"
+
+#Or pass a default value generator whose output depends on the current state/content of the objdict
+#must have 'self' in its signature
+#use 'self' as the keyword refering to the current objdict instance
+def default_gen(self):
+    if a in self:
+        return self.a.value
+    else:
+        return objdict(value=5)
+        
+obj=objdict(_use_default=True,_default=default_gen)
+print(obj.a) #Output: {'value':5}
+print(obj.b) #Output: 5
+
+#Using a default value generator to create new child objdict instances inheriting the parent's properties when accessing missing keys
+def default_gen(self):
+    return objdict(_use_default=True,_default=default_gen,_auto_self=True,)
+
+obj=objdict(_use_default=True,_default=default)
+obj.a.b.c=3
+print(obj) #Output: {'a':{'b':{'c':3}}}
+
+
+
+#Using it as a mocked object with context aware methods thanks to the _auto_self parameter which automatically passes the objdict instance as 'self' to callable attributes having 'self' in their signature
 
 obj=objdict(_auto_self=True)
 obj.a=2
