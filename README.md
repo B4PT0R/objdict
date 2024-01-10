@@ -139,13 +139,11 @@ print(obj.b) #Output: 5
 
 #Using a default value generator to create new child objdict instances inheriting the parent's properties when accessing missing keys
 def default_gen(self):
-    return objdict(_use_default=True,_default=default_gen,_auto_self=True,)
+    return objdict(_use_default=True,_default=default_gen,_auto_self=self._auto_self,_use_jsonpickle=self._use_jsonpickle)
 
 obj=objdict(_use_default=True,_default=default)
 obj.a.b.c=3
 print(obj) #Output: {'a':{'b':{'c':3}}}
-
-
 
 #Using it as a mocked object with context aware methods thanks to the _auto_self parameter which automatically passes the objdict instance as 'self' to callable attributes having 'self' in their signature
 
