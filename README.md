@@ -97,7 +97,7 @@ data.dump("my_json_file.json")
 data.dump("my_json_file.json",_use_jsonpickle=True)
 
 #make some more changes
-data.email="dummy.email@gmail.com
+data.email="dummy.email@gmail.com"
 
 #the reference to the file and jsonpickle usage preference from the last dump is kept in the objdict instance so you don't have to pass them again
 data.dump()
@@ -139,7 +139,7 @@ print(obj.a) #Output: "Missing key: a"
 #must have 'self' in its signature
 #use 'self' as the keyword refering to the current objdict instance
 def default_gen(self):
-    if a in self:
+    if 'a' in self:
         return self.a.value
     else:
         return objdict(value=5)
@@ -167,7 +167,7 @@ print(obj.a.b._auto_self) #Output: False
 #Choose explicitely _default=None if you want to pass None as a default value
 
 obj=objdict(_use_default=True)
-print(isinstance(obj.a),objdict)) #Output: True
+print(isinstance(obj.a),objdict) #Output: True
 
 obj=objdict(_use_default=True,_default=None)
 print(obj.a is None) #Output: True
