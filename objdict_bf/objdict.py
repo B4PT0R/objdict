@@ -456,11 +456,11 @@ class objdict(MutableMapping):
         else:
             raise ValueError("You must provide a valid json file path before loading from a file.")
         
-    def dump(self,file=None,use_jsonpickle=False):
+    def dump(self,file=None,_use_jsonpickle=False):
         """
         Serializes the objdict into a json file 
         """
-        self._use_jsonpickle=use_jsonpickle or self._use_jsonpickle
+        self._use_jsonpickle=_use_jsonpickle or self._use_jsonpickle
         self._file = file or self._file
         if is_valid_json_path(self._file):
             if self._use_jsonpickle:
