@@ -87,6 +87,7 @@ class objdict(MutableMapping):
             # This will handle both dict-like and list-like objects
             for key in get_keys(item):
                 item[key] = objdict.to_objdict(item[key])
+            return item
         else:
             return item
         
@@ -106,6 +107,7 @@ class objdict(MutableMapping):
             # This will handle both dict-like and list-like objects
             for key in get_keys(item):
                 item[key] = objdict.to_dict(item[key])
+            return item
         else:
             return item
 
