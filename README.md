@@ -137,9 +137,9 @@ obj=objdict(_use_default=True,_default=default_gen)
 print(obj.a) #Output: {'value':5}
 print(obj.b) #Output: 5
 
-#Using a default value generator to create new child objdict instances inheriting the parent's properties when accessing missing keys
+#Using a default value generator to create new child objdict instances inheriting the parent's setting when accessing missing keys
 def default_gen(self):
-    return objdict(_use_default=True,_default=default_gen,_auto_self=self._auto_self,_use_jsonpickle=self._use_jsonpickle)
+    return objdict(_use_default=True,_default=default_gen,_use_jsonpickle=self._use_jsonpickle)
 
 obj=objdict(_use_default=True,_default=default)
 obj.a.b.c=3
