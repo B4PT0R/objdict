@@ -71,6 +71,7 @@ d={
 }
 data = objdict(d)
 
+print(data)
 print(data.profile.hobbies[1].title) #Output: guitar playing
 
 #Conversion of dict items to their objdict version is automatic.
@@ -88,8 +89,10 @@ print(isinstance(d['profile']['hobbies'][1], dict)) #Output: True
 
 # Serialize to JSON string
 json_string = data.dumps()
+print(json_string)
 #or use jsonpickle for advanced serialization 
 json_string=data.dumps(_use_jsonpickle=True)
+print(json_string)
 
 #dump to a JSON file
 data.dump("my_json_file.json")
@@ -167,7 +170,7 @@ print(obj.a.b._auto_self) #Output: False
 #Choose explicitely _default=None if you want to pass None as a default value
 
 obj=objdict(_use_default=True)
-print(isinstance(obj.a),objdict) #Output: True
+print(isinstance(obj.a,objdict)) #Output: True
 
 obj=objdict(_use_default=True,_default=None)
 print(obj.a is None) #Output: True
