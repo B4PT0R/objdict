@@ -82,19 +82,19 @@ print(isinstance(d['profile']['hobbies'][1],objdict)) #Output: True
 
 #to_dict returns the underlying dict, converting recursively all objdicts found in the nested structure back to dicts
 print(d is data.to_dict()) #Ouptut: True
-print(isinstance(d['profile']['hobbies'][1], dict) #Output: True 
+print(isinstance(d['profile']['hobbies'][1], dict)) #Output: True 
 
 #-----------------------------JSON serialization-------------------------------
 
 # Serialize to JSON string
 json_string = data.dumps()
 #or use jsonpickle for advanced serialization 
-json_string=data.dumps(use_jsonpickle=True)
+json_string=data.dumps(_use_jsonpickle=True)
 
 #dump to a JSON file
 data.dump("my_json_file.json")
 #or
-data.dump("my_json_file.json",use_jsonpickle=True)
+data.dump("my_json_file.json",_use_jsonpickle=True)
 
 #make some more changes
 data.email="dummy.email@gmail.com
@@ -105,12 +105,16 @@ data.dump()
 # Deserialize from JSON string (creates a new instance)
 data = objdict.loads(json_string)
 #or
-data = objdict.loads(json_string,use_jsonpickle=True)
+data = objdict.loads(json_string,_use_jsonpickle=True)
 
 # Deserialize from a JSON file (new instance keeping reference to the json file)
 data = objdict.load("my_json_file.json")
 #or
-data = objdict.load("my_json_file.json",use_jsonpickle=True)
+data = objdict.load("my_json_file.json",_use_jsonpickle=True)
+
+#class methods creating new instances can be passed parameters accepted in the objdict constructor to control the properties of the created instance:
+data = objdict.loads(json_string,_use_jsonpickle=False,_use_default=True,_default=None,_auto_self=False)
+data = objdict.load("my_json_file.json",_use_jsonpickle=True,_use_default=True,_auto_self=True)
 
 #update data
 data.email="dummy.email@gmail.com"

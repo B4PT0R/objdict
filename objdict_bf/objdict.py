@@ -49,11 +49,17 @@ def is_valid_dict(dic):
     return isinstance(dic, dict) and all(is_valid_key(key) for key in dic)
 
 def is_valid_json_path(path):
+    """
+    Checks if a string is a valid path to a json file (the file may not exist, but its folder must)
+    """
     if isinstance(path,str) and path.endswith('.json') and os.path.isdir(os.path.dirname(path)):
         return True
     return False
 
 def is_valid_json_file(path):
+    """
+    Checks if a string is a valid path to an existing json file.
+    """
     if isinstance(path,str) and path.endswith('.json') and os.path.isfile(path) :
         return True
     return False
@@ -68,20 +74,38 @@ class objdict(MutableMapping):
     @staticmethod
     def to_objdict(item):
         """
-        Converts to objdict if item is a valid dict 
+        Converts to objdict if item is a valid dict.
+        If item is subscriptable, attempts to convert its values.
+        Otherwise, leave as is.
         """
         if is_valid_dict(item):
             return objdict(item)
+        elif isinstance(item, str):
+            # Do not convert strings
+            return item
+        elif hasattr(item, '__iter__') and hasattr(item, '__getitem__') and hasattr(item, '__setitem__'):
+            # This will handle both dict-like and list-like objects
+            for key in get_keys(item):
+                item[key] = objdict.to_objdict(item[key])
         else:
             return item
         
     @staticmethod
     def to_dict(item):
         """
-        Converts to dict if item is an objdict
+        Converts to dict if item is an objdict.
+        If item is subscriptable, attempts to convert its values back to dicts.
+        Otherwise, leave as is.
         """
         if isinstance(item,objdict):
             return item._data_dict
+        elif isinstance(item, str):
+            # Do not convert strings
+            return item
+        elif hasattr(item, '__iter__') and hasattr(item, '__getitem__') and hasattr(item, '__setitem__'):
+            # This will handle both dict-like and list-like objects
+            for key in get_keys(item):
+                item[key] = objdict.to_dict(item[key])
         else:
             return item
 
@@ -231,7 +255,7 @@ class objdict(MutableMapping):
             else:
                 return item
         else:
-            return objdict.to_objdict_rec(item)
+            return objdict.to_objdict(item)
 
     def __setitem__(self, key, value):
         if is_valid_key(key):
@@ -312,7 +336,7 @@ class objdict(MutableMapping):
     def pop(self, key, default=None):
         default=default or self._default
         value=self._data_dict.pop(key, objdict.default(self,key,default))
-        return objdict.to_objdict_rec(value)
+        return objdict.to_objdict(value)
 
     def clear(self):
         self._data_dict.clear()
@@ -352,7 +376,7 @@ class objdict(MutableMapping):
 
     def popitem(self):
         key, value = self._data_dict.popitem()
-        return key, objdict.to_objdict_rec(value)
+        return key, objdict.to_objdict(value)
 
     @classmethod
     def fromkeys(cls, iterable, value=None):
