@@ -8,6 +8,7 @@
 - Synchronization with the original dictionary if passed at instantiation.
 - Utility methods for recursive conversion of nested structures to and from `objdict` and `dict`.
 - JSON serialization and deserialization methods for both strings and files with optional jsonpickle support.
+- Advanced default value attribution features for missing keys. 
 - optional object-like behavior, by auto-passing the instance as 'self' to callable attributes with 'self' in their signature.
 
 ## Installation
@@ -19,21 +20,20 @@ pip install objdict-bf
 ## Signature of the constructor
 
 ```python
-objdict(*args,_use_default=False,_default=None,_file=None,_use_jsonpickle=False,_auto_self=False,**kwargs)
+objdict(*args,_use_default=False,_default=objdict.default_default,_file=None,_use_jsonpickle=False,_auto_self=False,**kwargs)
 ```
 
 Parameters:
-`*args`: either dicts, objdicts or iterables on key:value pairs
-`_use_default`: boolean, determines if a default value is attributed to missing keys
-`_default`: any value. If callable, the callable will be used to generate default values
-`_file`: reference to a json file path for dumping
-`_use_jsonpicke`: boolean. Determines if jsonpickle is used for serialization when dumping.
-`_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable attributes with 'self' in their signature (mocked object behavior).
+- `*args`: either dicts, objdicts or iterables on key:value pairs. If the first arg is a dict, it will serve as the internal _data_dict of the objdict instance.
+- `_use_default`: boolean, determines if a default value is attributed to missing keys
+- `_default`: can be any value or callable. If callable, the callable will be used to handle default values generation. If ommited, falls back to the objdict.default_default static method: automatically generate a child objdict instance when accessing a missing key. 
+- `_file`: reference to a json file path for dumping
+- `_use_jsonpicke`: boolean. Determines if jsonpickle is used for serialization when dumping.
+- `_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable attributes with 'self' in their signature (mocked object behavior).
+- `**kwargs`: key value pairs passed as kwargs to update the objdict
 
 
 ## Usage
-
-Here's an example of how to use the `objdict` wrapper:
 
 ```python
 from objdict_bf import objdict
@@ -84,8 +84,12 @@ print(isinstance(d['profile']['hobbies'][1],objdict)) #Output: True
 print(d is data.to_dict()) #Ouptut: True
 print(isinstance(d['profile']['hobbies'][1], dict) #Output: True 
 
+#-----------------------------JSON serialization-------------------------------
+
 # Serialize to JSON string
 json_string = data.dumps()
+#or use jsonpickle for advanced serialization 
+json_string=data.dumps(use_jsonpickle=True)
 
 #dump to a JSON file
 data.dump("my_json_file.json")
@@ -115,6 +119,9 @@ data.user="dummy_username"
 #dump changes to 'my_json_file.json' 
 data.dump()
 
+#-------------------Working with default value generators-------------------
+
+
 #Default value when accessing a missing key
 obj=objdict(_use_default=True,_default=3)
 print(obj.a) #Output: 3
@@ -137,15 +144,33 @@ obj=objdict(_use_default=True,_default=default_gen)
 print(obj.a) #Output: {'value':5}
 print(obj.b) #Output: 5
 
-#Using a default value generator to create new child objdict instances inheriting the parent's setting when accessing missing keys
-def default_gen(self):
-    return objdict(_use_default=True,_default=default_gen,_use_jsonpickle=self._use_jsonpickle)
+#Accepted signature of default value generators are () ; (self,); (key,) ; (self,key)
+#This allows implementing complex context aware and key-dependant logic for default value attribution. 
+#Any other signature will be considered invalid and will fall back to assign the callable itself as the default value for all keys.
 
-obj=objdict(_use_default=True,_default=default)
+#Using a default value generator to create new child objdict instances inheriting the parent's setting when accessing missing keys
+def default_default(self):
+    return objdict(_use_default=True,_default=default_default,_use_jsonpickle=self._use_jsonpickle,_auto_self=self._auto_self)
+
+obj=objdict(_use_default=True,_default=default_default,_use_jsonpickle=True)
 obj.a.b.c=3
 print(obj) #Output: {'a':{'b':{'c':3}}}
+#child elements inherit the chosen parent properties
+print(obj.a.b._use_jsonpickle) #Output: True
+print(obj.a.b._auto_self) #Output: False
 
-#Using it as a mocked object with context aware methods thanks to the _auto_self parameter which automatically passes the objdict instance as 'self' to callable attributes having 'self' in their signature
+#This last behavior is the default one (implemented by the objdict.default_default static method) if you set _use_default to True without specifying a _default parameter
+#Choose explicitely _default=None if you want to pass None as a default value
+
+obj=objdict(_use_default=True)
+print(isinstance(obj.a),objdict)) #Output: True
+
+obj=objdict(_use_default=True,_default=None)
+print(obj.a is None) #Output: True
+
+#--------------------------------Mock objects-------------------------------
+
+#Using the objdict as a mocked object with context aware methods thanks to the _auto_self parameter which automatically passes the objdict instance as 'self' to callable attributes having 'self' as first parameter in their signature.
 
 obj=objdict(_auto_self=True)
 obj.a=2
