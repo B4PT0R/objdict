@@ -187,6 +187,7 @@ class objdict(MutableMapping):
         else:
             if self._use_default:
                 item=objdict.default(key,self._default)
+                self[key]=item
             else:
                 raise KeyError(f"Invalid key: '{key}'")
         if callable(item) and self._auto_self:
@@ -215,9 +216,14 @@ class objdict(MutableMapping):
         """
         Support for attribute-style access to key:value pairs.
         """
-        if hasattr(super(),key) or key.startswith('__'):
-            return getattr(super(),key)
+        if key in self.__dict__:
+            # First, check if it's an instance attribute
+            return getattr(self, key)
+        elif key.startswith('__'):
+            # delegate to super for any special attribute
+            return super().__getattribute__(key)
         else:
+            # Then, check in the dictionary
             return self[key]
 
     def __setattr__(self, key, value):
@@ -229,6 +235,11 @@ class objdict(MutableMapping):
                 super().__setattr__(key,value)
             else:
                 raise TypeError("The '_use_default' attribute must be set to a boolean value.")
+        elif key =='_auto_self':
+            if isinstance(value,bool):
+                super().__setattr__(key,value)
+            else:
+                raise TypeError("The '_auto_self' attribute must be set to a boolean value.")
         elif key =='_use_jsonpickle':
             if isinstance(value,bool):
                 super().__setattr__(key,value)
@@ -238,7 +249,7 @@ class objdict(MutableMapping):
             super().__setattr__(key,value)
         elif key=='_file':
             if value is not None:
-                if isinstance(value,str) and value.endswith(".json"):
+                if isinstance(value,str) and os.path.isdir(os.path.dirname(value)) and value.endswith(".json"):
                     super().__setattr__(key,value)
                 else:
                     raise ValueError(" _file attribute must be a json file path.")
@@ -372,8 +383,7 @@ class objdict(MutableMapping):
         """
         Serializes an objdict into a json string
         """
-        use_jsonpickle=use_jsonpickle or self._use_jsonpickle
-        self._use_jsonpickle=use_jsonpickle
+        self._use_jsonpickle=use_jsonpickle or self._use_jsonpickle
         if self._use_jsonpickle:
             return jsonpickle.encode(self.to_dict())
         else:
@@ -403,19 +413,31 @@ class objdict(MutableMapping):
         """
         Serializes the objdict into a json file 
         """
-        use_jsonpickle=use_jsonpickle or self._use_jsonpickle
-        self._use_jsonpickle=use_jsonpickle
-        file = file or self._file
-        self._file=file
-        if isinstance(file, str) and os.path.isdir(os.path.dirname(file)) and file.endswith(".json"):
+        self._use_jsonpickle=use_jsonpickle or self._use_jsonpickle
+        self._file = file or self._file
+        if isinstance(self._file, str) and os.path.isdir(os.path.dirname(self._file)) and self._file.endswith(".json"):
             if self._use_jsonpickle:
-                with open(file, 'w', encoding='utf-8') as f:
+                with open(self._file, 'w', encoding='utf-8') as f:
                     f.write(jsonpickle.encode(self.to_dict()))  
             else:  
-                with open(file, 'w', encoding='utf-8') as f:
+                with open(self._file, 'w', encoding='utf-8') as f:
                     json.dump(self.to_dict(), f, indent=4,ensure_ascii=False)
         else:
             raise ValueError("You must provide a valid json file path before dumping to a file.")
 
     
 MutableMapping.register(objdict)
+
+if __name__=='__main__':
+    def default(key):
+         return objdict(_auto_self=True,_default=default,_use_default=True)
+    obj=objdict(_auto_self=True, _default=default,_use_default=True)
+    obj.a.value=2
+    def add(self, x):
+        self.value+=x
+    obj.a.add=add
+    obj.b.value=5
+    obj.b.add=add
+    obj.b.add(4)
+    obj.a.add(3)
+    print(obj)
