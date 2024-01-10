@@ -52,7 +52,7 @@ def is_valid_json_path(path):
     """
     Checks if a string is a valid path to a json file (the file may not exist, but its folder must)
     """
-    if isinstance(path,str) and path.endswith('.json') and os.path.isdir(os.path.dirname(path)):
+    if isinstance(path,str) and path.endswith('.json') and os.path.isdir(os.path.dirname(os.path.abspath(path))):
         return True
     return False
 
@@ -60,7 +60,7 @@ def is_valid_json_file(path):
     """
     Checks if a string is a valid path to an existing json file.
     """
-    if isinstance(path,str) and path.endswith('.json') and os.path.isfile(path) :
+    if isinstance(path,str) and path.endswith('.json') and os.path.isfile(os.path.abspath(path)) :
         return True
     return False
 
