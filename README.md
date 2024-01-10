@@ -20,15 +20,15 @@ pip install objdict-bf
 ## Signature of the constructor
 
 ```python
-objdict(*args,_use_default=False,_default=objdict.default_default,_file=None,_use_jsonpickle=False,_auto_self=False,**kwargs)
+objdict(*args,_use_default=False,_default=None,_file=None,_use_jsonpickle=False,_auto_self=False,**kwargs)
 ```
 
 Parameters:
 - `*args`: either dicts, objdicts or iterables on key:value pairs. If the first arg is a dict, it will serve as the internal _data_dict of the objdict instance.
 - `_use_default`: boolean, determines if a default value is attributed to missing keys
-- `_default`: can be any value or callable. If callable, the callable will be used to handle default values generation. If ommited, falls back to the objdict.default_default static method: automatically generate a child objdict instance when accessing a missing key. 
+- `_default`: can be any value or callable. If callable with adequate signature, the callable will be used to handle default values generation.
 - `_file`: reference to a json file path for dumping
-- `_use_jsonpicke`: boolean. Determines if jsonpickle is used for serialization when dumping.
+- `_use_jsonpicke`: boolean. Determines if jsonpickle is used for serialization/deserialization when dumping/loading.
 - `_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable attributes with 'self' in their signature (mocked object behavior).
 - `**kwargs`: key value pairs passed as kwargs to update the objdict
 
