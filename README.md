@@ -174,7 +174,7 @@ print(obj) #Output: {'a':{'b':{'c':3}}}
 print(obj.a.b._backend) #Output: 'toml'
 print(obj.a.b._auto_self) #Output: True
 
-#The child_instance generator hard coded above is already implemented in the module as objdict.child_instance which you may pass as _default parameter
+#The child_instance generator hard coded above is already implemented as objdict.child_instance static method which you may pass as _default parameter
 obj=objdict(_use_default=True,_default=objdict.child_instance)
 
 #--------------------------------Mock objects-------------------------------
