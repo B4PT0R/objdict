@@ -1,6 +1,6 @@
 # objdict-bf
 
-`objdict-bf` is a Python module that provides a wrapper class for conveniently manipulating dictionaries or dict-based JSON nested structures using attribute-like syntax. It is intended mostly to ease manipulation of JSON data, web requests responses, configuration files, dynamic prototyping...
+`objdict-bf` is a Python module that provides a wrapper class for conveniently manipulating dictionaries or dict-based JSON/TOML nested structures using attribute-like syntax. It is intended mostly to ease manipulation of JSON/TOML data, web requests responses, configuration files, dynamic prototyping...
 
 ## Features
 
