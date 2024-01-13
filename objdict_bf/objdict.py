@@ -294,7 +294,7 @@ class objdict(MutableMapping):
             else:
                 raise TypeError(f"The {key} attribute must be set to a boolean value.")
         elif key=='_backend':
-            if value in ['json','toml','jsonpicke']:
+            if value in ['json','toml','jsonpickle']:
                 super().__setattr__(key,value)
             else:
                 raise ValueError(f"Unsupported serialization backend: {value}")
