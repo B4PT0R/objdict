@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="objdict_bf",
-    version="0.1.17",
+    version="0.1.18",
     author="Baptiste Ferrand",
     author_email="bferrand.maths@gmail.com",
     description="A custom wrapper object around dict that allows attribute-style access to dictionary items and support for nested JSON data.",
@@ -19,7 +19,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "jsonpickle"
+        "jsonpickle",
+        "toml"
     ],
     python_requires='>=3.6',
 )
