@@ -274,10 +274,10 @@ class objdict(MutableMapping):
         """
         Support for attribute-style access to key:value pairs.
         """
-        if key in self.__dict__:
+        if key in ['_data_dict','_file','_use_default','_default','_backend','_auto_self']:
             # First, check if it's an instance attribute
             return getattr(self, key)
-        elif key.startswith('__'):
+        elif key.startswith('_'):
             # delegate to super for any special attribute
             return super().__getattribute__(key)
         else:
@@ -483,12 +483,12 @@ class objdict(MutableMapping):
         else:
             raise ValueError("You must provide a valid file path before loading from a file.")
         
-    def dump(self,file=None,_backend=None):
+    def dump(self,_file=None,_backend=None):
         """
         Serializes the objdict to a file with the chosen backend (default: 'json') 
         """
         self._backend=_backend or self._backend
-        self._file = file or self._file
+        self._file = _file or self._file
         if not self._backend in ['json','toml','jsonpickle']:
             raise ValueError(f"Unsupported serialization backend: {self._backend}")
         
