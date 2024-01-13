@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="objdict_bf",
-    version="0.1.18",
+    version="0.1.20",
     author="Baptiste Ferrand",
     author_email="bferrand.maths@gmail.com",
-    description="A custom wrapper object around dict that allows attribute-style access to dictionary items and support for nested JSON data.",
+    description="A custom wrapper object around dict that allows attribute-style access to dictionary items and support for nested JSON/TOML data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/B4PT0R/objdict",
