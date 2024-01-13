@@ -1,15 +1,15 @@
 # objdict-bf
 
-`objdict-bf` is a Python module that provides a wrapper class for conveniently manipulating dictionaries or dict-based JSON/TOML nested structures using attribute-like syntax. It is intended mostly to ease manipulation of JSON/TOML data, web requests responses, configuration files, dynamic prototyping...
+`objdict-bf` is a Python module that provides a wrapper class to conveniently manipulate dictionaries or dict-based json/toml nested structures using attribute-like syntax. It is intended mostly to ease manipulation of json/toml data, web requests and responses, configuration files, dynamic prototyping...
 
 ## Features
 
 - Attribute-style access to dictionary items (e.g., `obj.key` instead of `obj['key']`).
 - Synchronization with the original dictionary if passed at instantiation.
 - Utility methods for recursive conversion of nested structures to and from `objdict` and `dict`.
-- serialization and deserialization methods for both strings and files with json, toml and jsonpickle backend support.
+- Serialization and deserialization methods for both strings and files with json, toml and jsonpickle backend support.
 - Advanced default value attribution features for missing keys. 
-- optional object-like behavior, by auto-passing the instance as 'self' to callable attributes with 'self' in their signature.
+- optional object-like behavior, by auto-passing the objdict instance as 'self' to callable attributes having 'self' in their signature.
 
 ## Installation
 
@@ -26,10 +26,10 @@ objdict(*args,_use_default=False,_default=None,_file=None,_backend=None,_auto_se
 Parameters:
 - `*args`: either dicts, objdicts or iterables on key:value pairs. If the first arg is a dict, it will serve as the internal _data_dict of the objdict instance.
 - `_use_default`: boolean, determines if a default value is attributed to missing keys
-- `_default`: can be any value or callable. If callable with adequate signature, the callable will be used to handle default values generation.
+- `_default`: can be any value or callable. If it is callable with adequate signature, this callable will be used to handle default values generation.
 - `_file`: reference to a json file path for dumping
 - `_backend`: either 'json', 'toml' or 'jsonpickle'. Determines the backend used for serialization/deserialization when dumping/loading (None defaults to 'json').
-- `_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable attributes with 'self' in their signature (mocked object behavior).
+- `_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable callable with 'self' in their signature (mocked object behavior).
 - `**kwargs`: key value pairs passed as kwargs to update the objdict
 
 
@@ -49,17 +49,21 @@ data = objdict(
 d={'name': 'John', 'age': 30, 'location': 'New York'}
 data = objdict(d)
 
-# Access data using attribute-style access
+#Access data using attribute-style access
 print(data.name)  # Output: John
 print(data.age)   # Output: 30
 
-# Modify data
+#Modify data
 data.age = 31
+
+#Create a new key:value pair
+data.job='developer'
 
 #Changes are reflected on the original dict
 print(d['age']) #Ouput: 31
+print(d['job']) #Ouput: 'developer'
 
-#Support for nested structures involving lists
+#Chaining attributes is supported for nested structures involving lists
 d={
     'profile':{
         'name':'John',
@@ -71,10 +75,11 @@ d={
 }
 data = objdict(d)
 
-print(data)
+print(data) #Output: the repr of the above dict
 print(data.profile.hobbies[1].title) #Output: guitar playing
 
-#Conversion of dict items to their objdict version is automatic (will inherit the parent objdict settings, namely: _backend,_use_default, _default, _auto_self).
+#Conversion of dict items to their objdict version is automatic upon access. 
+#The created objdicts will inherit the parent objdict settings, namely: _backend,_use_default, _default, _auto_self).
 #The objdict being essentially a wrapper interface on the initial dict,  
 #this conversion is reflected in the initial dict content as well
 
@@ -94,7 +99,7 @@ print(json_string)
 toml_string=data.dumps(_backend='toml')
 print(toml_string)
 
-#dump to a JSON file
+#dump to a file
 data.dump("my_json_file.json")
 #or
 data.dump("my_toml_file.toml",_backend='toml')
@@ -124,7 +129,7 @@ data = objdict.load(file,_backend='toml',_use_default=False,_auto_self=True)
 data.email="dummy.email@gmail.com"
 data.user="dummy_username"
 
-#dump changes to the file using the chosen backend 
+#dump changes to the file using the previously chosen backend 
 data.dump()
 
 #-------------------Working with default value generators-------------------
@@ -138,6 +143,7 @@ print(obj.a) #Output: None
 
 #Or, choose a default value
 obj=objdict(_use_default=True,_default=3)
+#Missing key will be initialized to 3 and returned
 print(obj.a) #Output: 3
 
 #Or pass a default value generator depending on the key (must have 'key' in its signature)
@@ -163,7 +169,7 @@ print(obj.b) #Output: 5
 #This allows implementing context-aware and key-dependant logic for default value attribution. 
 #Any other signature will be considered invalid and will fall back to assign the callable itself as the default value for all keys.
 
-#Using a default value generator to create new child objdict instances inheriting the parent's settings when accessing missing keys
+#Example: Using a default value generator to automatically create new child objdict instances inheriting the parent's settings when accessing missing keys
 def child_instance(self):
     return objdict(_use_default=True,_default=child_instance,_backend=self._backend,_auto_self=self._auto_self)
 
@@ -174,8 +180,10 @@ print(obj) #Output: {'a':{'b':{'c':3}}}
 print(obj.a.b._backend) #Output: 'toml'
 print(obj.a.b._auto_self) #Output: True
 
-#The child_instance generator hard coded above is already implemented as objdict.child_instance static method which you may pass as _default parameter
+#The child_instance generator hard-coded above is already implemented as the objdict.child_instance static method which you may pass as _default parameter
 obj=objdict(_use_default=True,_default=objdict.child_instance)
+obj.a.b.c=3
+print(obj) #Output: {'a':{'b':{'c':3}}}
 
 #--------------------------------Mock objects-------------------------------
 
