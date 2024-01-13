@@ -7,7 +7,7 @@
 - Attribute-style access to dictionary items (e.g., `obj.key` instead of `obj['key']`).
 - Synchronization with the original dictionary if passed at instantiation.
 - Utility methods for recursive conversion of nested structures to and from `objdict` and `dict`.
-- JSON serialization and deserialization methods for both strings and files with optional jsonpickle support.
+- serialization and deserialization methods for both strings and files with json, toml and jsonpickle backend support.
 - Advanced default value attribution features for missing keys. 
 - optional object-like behavior, by auto-passing the instance as 'self' to callable attributes with 'self' in their signature.
 
@@ -20,7 +20,7 @@ pip install objdict-bf
 ## Signature of the constructor
 
 ```python
-objdict(*args,_use_default=False,_default=None,_file=None,_use_jsonpickle=False,_auto_self=False,**kwargs)
+objdict(*args,_use_default=False,_default=None,_file=None,_backend=None,_auto_self=False,**kwargs)
 ```
 
 Parameters:
@@ -28,7 +28,7 @@ Parameters:
 - `_use_default`: boolean, determines if a default value is attributed to missing keys
 - `_default`: can be any value or callable. If callable with adequate signature, the callable will be used to handle default values generation.
 - `_file`: reference to a json file path for dumping
-- `_use_jsonpicke`: boolean. Determines if jsonpickle is used for serialization/deserialization when dumping/loading.
+- `_backend`: either 'json', 'toml' or 'jsonpickle'. Determines the backend used for serialization/deserialization when dumping/loading (None defaults to 'json').
 - `_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable attributes with 'self' in their signature (mocked object behavior).
 - `**kwargs`: key value pairs passed as kwargs to update the objdict
 
@@ -74,7 +74,7 @@ data = objdict(d)
 print(data)
 print(data.profile.hobbies[1].title) #Output: guitar playing
 
-#Conversion of dict items to their objdict version is automatic.
+#Conversion of dict items to their objdict version is automatic (will inherit the parent objdict settings, namely: _backend,_use_default, _default, _auto_self).
 #The objdict being essentially a wrapper interface on the initial dict,  
 #this conversion is reflected in the initial dict content as well
 
@@ -85,54 +85,55 @@ print(isinstance(d['profile']['hobbies'][1],objdict)) #Output: True
 print(d is data.to_dict()) #Ouptut: True
 print(isinstance(d['profile']['hobbies'][1], dict)) #Output: True 
 
-#-----------------------------JSON serialization-------------------------------
+#-----------------------------Serialization-------------------------------
 
 # Serialize to JSON string
 json_string = data.dumps()
 print(json_string)
-#or use jsonpickle for advanced serialization 
-json_string=data.dumps(_use_jsonpickle=True)
-print(json_string)
+#or use another backend for serialization 
+toml_string=data.dumps(_backend='toml')
+print(toml_string)
 
 #dump to a JSON file
 data.dump("my_json_file.json")
 #or
-data.dump("my_json_file.json",_use_jsonpickle=True)
+data.dump("my_toml_file.toml",_backend='toml')
 
 #make some more changes
 data.email="dummy.email@gmail.com"
 
-#the reference to the file and jsonpickle usage preference from the last dump is kept in the objdict instance so you don't have to pass them again
+#the reference to the file and backend preference from the last dump is kept in the objdict instance so you don't have to pass them again
 data.dump()
 
-# Deserialize from JSON string (creates a new instance)
+# Deserialize from a string (new instance keeping reference to the chosen backend)
 data = objdict.loads(json_string)
 #or
-data = objdict.loads(json_string,_use_jsonpickle=True)
+data = objdict.loads(toml_string,_backend='toml')
 
-# Deserialize from a JSON file (new instance keeping reference to the json file)
+
+# Deserialize from a file (new instance keeping reference to the chosen file and backend)
 data = objdict.load("my_json_file.json")
 #or
-data = objdict.load("my_json_file.json",_use_jsonpickle=True)
+data = objdict.load("my_toml_file.toml",_backend='toml')
 
 #class methods creating new instances can be passed parameters accepted in the objdict constructor to control the properties of the created instance:
-data = objdict.loads(json_string,_use_jsonpickle=False,_use_default=True,_default=None,_auto_self=False)
-data = objdict.load("my_json_file.json",_use_jsonpickle=True,_use_default=True,_auto_self=True)
+data = objdict.loads(string,_backend='json',_use_default=True,_default=None,_auto_self=False)
+data = objdict.load(file,_backend='toml',_use_default=False,_auto_self=True)
 
 #update data
 data.email="dummy.email@gmail.com"
 data.user="dummy_username"
 
-#dump changes to 'my_json_file.json' 
+#dump changes to the file using the chosen backend 
 data.dump()
 
 #-------------------Working with default value generators-------------------
 
 
-#Default value when accessing a missing key
+#Default value (None) when accessing a missing key
 obj=objdict(_use_default=True)
 
-#Will return None and won't raise a KeyError
+#Will set the value to None and won't raise a KeyError
 print(obj.a) #Output: None
 
 #Or, choose a default value
@@ -164,14 +165,14 @@ print(obj.b) #Output: 5
 
 #Using a default value generator to create new child objdict instances inheriting the parent's settings when accessing missing keys
 def child_instance(self):
-    return objdict(_use_default=True,_default=child_instance,_use_jsonpickle=self._use_jsonpickle,_auto_self=self._auto_self)
+    return objdict(_use_default=True,_default=child_instance,_backend=self._backend,_auto_self=self._auto_self)
 
-obj=objdict(_use_default=True,_default=child_instance,_use_jsonpickle=True,_auto_self=False)
+obj=objdict(_use_default=True,_default=child_instance,_backend='toml',_auto_self=True)
 obj.a.b.c=3
 print(obj) #Output: {'a':{'b':{'c':3}}}
 #child elements inherit the chosen parent properties
-print(obj.a.b._use_jsonpickle) #Output: True
-print(obj.a.b._auto_self) #Output: False
+print(obj.a.b._backend) #Output: 'toml'
+print(obj.a.b._auto_self) #Output: True
 
 #The child_instance generator hard coded above is already implemented in the module as objdict.child_instance which you may pass as _default parameter
 obj=objdict(_use_default=True,_default=objdict.child_instance)
