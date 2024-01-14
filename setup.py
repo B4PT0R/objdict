@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="objdict_bf",
-    version="0.1.23",
+    version="0.1.24",
     author="Baptiste Ferrand",
     author_email="bferrand.maths@gmail.com",
     description="A custom wrapper object around dict that allows attribute-style access to dictionary items and support for serialization of nested data.",

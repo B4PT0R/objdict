@@ -54,7 +54,7 @@ def is_valid_path(path):
     """
     Checks if a string is a valid path to a file (the file may not exist, but its folder must)
     """
-    if isinstance(path,str) and os.path.isdir(os.path.dirname(os.path.abspath(path))) and any(path.endswith(ext) for ext in ['.json','.toml','.yml']):
+    if isinstance(path,str) and os.path.isdir(os.path.dirname(os.path.abspath(path))) and any(path.endswith(ext) for ext in ['.json','.toml','.yaml','yml']):
         return True
     return False
 
@@ -62,7 +62,7 @@ def is_valid_file(path):
     """
     Checks if a string is a valid path to an existing file.
     """
-    if isinstance(path,str) and os.path.isfile(os.path.abspath(path)) and any(path.endswith(ext) for ext in ['.json','.toml','.yml']):
+    if isinstance(path,str) and os.path.isfile(os.path.abspath(path)) and any(path.endswith(ext) for ext in ['.json','.toml','.yaml','yml']):
         return True
     return False
 
@@ -295,7 +295,7 @@ class objdict(MutableMapping):
             else:
                 raise TypeError(f"The {key} attribute must be set to a boolean value.")
         elif key=='_backend':
-            if value in ['json','toml','jsonpickle','yaml']:
+            if value in ['json','toml','jsonpickle','yml','yaml']:
                 super().__setattr__(key,value)
             else:
                 raise ValueError(f"Unsupported serialization backend: {value}")
@@ -431,7 +431,7 @@ class objdict(MutableMapping):
         elif _backend=='toml':
             data=toml.loads(string)
         elif _backend=='yaml':
-            data=yaml.load(string)
+            data=yaml.safe_load(string)
         elif _backend=='jsonpickle':
             data=json.loads(string)
         else:
@@ -474,9 +474,9 @@ class objdict(MutableMapping):
             elif _backend=='toml' and _file.endswith(".toml"):
                 with open(_file,'r') as f:
                     data=toml.load(f)
-            elif _backend=='yaml' and _file.endswith(".yml"):
+            elif _backend=='yaml' and any(_file.endswith(ext) for ext in ('yml','yaml')):
                 with open(_file,'r') as f:
-                    data=yaml.load(f) 
+                    data=yaml.safe_load(f) 
             elif _backend=='jsonpickle' and _file.endswith(".json"):   
                 with open(_file,'r') as f:
                     data=jsonpickle.decode(f.read())
@@ -507,7 +507,7 @@ class objdict(MutableMapping):
             elif self._backend=='toml' and self._file.endswith('.toml'):
                 with open(self._file, 'w', encoding='utf-8') as f:
                     toml.dump(self.to_dict(), f)
-            elif self._backend=='yaml' and self._file.endswith('.yml'):
+            elif self._backend=='yaml' and any(self._file.endswith(ext) for ext in ('yml','yaml')):
                 with open(self._file, 'w', encoding='utf-8') as f:
                     yaml.dump(self.to_dict(), f)
             elif self._backend=='jsonpickle' and self._file.endswith('.json'):              
