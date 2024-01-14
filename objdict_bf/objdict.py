@@ -1,10 +1,10 @@
 """
-Module providing an objdict class allowing to conveniently manipulate dictionaries or dict-based JSON nested structures using attribute-like syntax.
-Intended mostly to ease manipulation of JSON data, web requests responses, configuration files, fast prototyping...
+Module providing an objdict class allowing to conveniently manipulate dictionaries or dict-based nested structures using attribute-like syntax.
+Intended mostly to ease manipulation of nested data, web requests and responses, configuration files, fast prototyping...
 If the first argument passed at instantiation is a dict, the resulting objdict will use this dict as its internal data storage.
 This ensures that any modification on either object is reflected on the other.
 Provides utility methods for dict to objdict, and objdict to dict recursive conversion of nested structures.
-Supports json, toml and jsonpickle backends for serialization and deserialization:
+Supports json, toml, yaml and jsonpickle backends for serialization and deserialization:
 - from a string via .dumps() and .loads() methods.
 - from a file via .dump() and load() methods
 """
@@ -14,6 +14,7 @@ jsonpickle.set_preferred_backend('json')
 jsonpickle.set_encoder_options('json', indent=4,ensure_ascii=False)
 import json
 import toml
+import yaml
 import re
 import os
 import inspect
@@ -53,7 +54,7 @@ def is_valid_path(path):
     """
     Checks if a string is a valid path to a file (the file may not exist, but its folder must)
     """
-    if isinstance(path,str) and os.path.isdir(os.path.dirname(os.path.abspath(path))):
+    if isinstance(path,str) and os.path.isdir(os.path.dirname(os.path.abspath(path))) and any(path.endswith(ext) for ext in ['.json','.toml','.yml']):
         return True
     return False
 
@@ -61,7 +62,7 @@ def is_valid_file(path):
     """
     Checks if a string is a valid path to an existing file.
     """
-    if isinstance(path,str) and os.path.isfile(os.path.abspath(path)) :
+    if isinstance(path,str) and os.path.isfile(os.path.abspath(path)) and any(path.endswith(ext) for ext in ['.json','.toml','.yml']):
         return True
     return False
 
@@ -69,7 +70,7 @@ class objdict(MutableMapping):
     """
     Class implementing an attribute-style access dictionary.
     Provides support for converting nested structures to and from objdict and dict.
-    Provides support for json de/serialization to and from a json string or a json file. 
+    Provides support for de/serialization to and from a string or a file using a chosen serialization backend ('json','toml','yaml','jsonpickle'). 
     """
 
     @staticmethod
@@ -183,13 +184,13 @@ class objdict(MutableMapping):
     def __init__(self, *args,_use_default=False,_default=None,_file=None,_auto_self=False,_backend=None, **kwargs):
         """
         Initialize the objdict with key-value pairs as kwargs, or dicts/objdicts/iterables passed as args.
-        If the fisrt unamed arg is a dict or objdict object, it will be permanently synchronized (same object adress) to the internal _data_dict.
+        If the first unamed arg is a dict or objdict object, it will be permanently synchronized (same object adress) to the internal _data_dict.
         """
         self._use_default=_use_default # use the default value generator
         self._default=_default # default value or default value generator function
         self._file=_file  #optional file path for direct dumping
         self._auto_self=_auto_self #allows to auto-pass the objdict instance to callable items, mimicking object methods behavior
-        self._backend=_backend or 'json' #set the backend for serialization ('json','jsonpickle','toml')
+        self._backend=_backend or 'json' #set the backend for serialization ('json','yaml','jsonpickle','toml')
         if args:
             if isinstance(args[0], dict):
                 if is_valid_dict(args[0]):
@@ -278,10 +279,10 @@ class objdict(MutableMapping):
             # First, check if it's an instance attribute
             return getattr(self, key)
         elif key.startswith('_'):
-            # delegate to super for any special attribute
+            # Then delegate to super for any special attribute
             return super().__getattribute__(key)
         else:
-            # Then, check in the dictionary
+            # Then check in the dictionary
             return self[key]
 
     def __setattr__(self, key, value):
@@ -294,7 +295,7 @@ class objdict(MutableMapping):
             else:
                 raise TypeError(f"The {key} attribute must be set to a boolean value.")
         elif key=='_backend':
-            if value in ['json','toml','jsonpickle']:
+            if value in ['json','toml','jsonpickle','yaml']:
                 super().__setattr__(key,value)
             else:
                 raise ValueError(f"Unsupported serialization backend: {value}")
@@ -429,6 +430,8 @@ class objdict(MutableMapping):
             data=jsonpickle.decode(string)
         elif _backend=='toml':
             data=toml.loads(string)
+        elif _backend=='yaml':
+            data=yaml.load(string)
         elif _backend=='jsonpickle':
             data=json.loads(string)
         else:
@@ -448,6 +451,8 @@ class objdict(MutableMapping):
             return json.dumps(self.to_dict(),indent=4,ensure_ascii=False)
         elif self._backend=='toml':
             return toml.dumps(self.to_dict())
+        elif self._backend=='yaml':
+            return yaml.dump(self.to_dict())
         elif self._backend=='jsonpickle':
             return jsonpickle.encode(self.to_dict())
         else:
@@ -460,7 +465,7 @@ class objdict(MutableMapping):
         Creates a new objdict instance by deserializing a file with the chosen backend (default 'json')
         """
         _backend=_backend or 'json'
-        if not _backend in ['json','toml','jsonpickle']:
+        if not _backend in ['json','toml','yaml','jsonpickle']:
             raise ValueError(f"Unsupported serialization backend: {_backend}")
         if is_valid_file(_file):
             if _backend=='json' and _file.endswith(".json"):
@@ -468,7 +473,10 @@ class objdict(MutableMapping):
                     data=json.load(f)
             elif _backend=='toml' and _file.endswith(".toml"):
                 with open(_file,'r') as f:
-                    data=toml.load(f) 
+                    data=toml.load(f)
+            elif _backend=='yaml' and _file.endswith(".yml"):
+                with open(_file,'r') as f:
+                    data=yaml.load(f) 
             elif _backend=='jsonpickle' and _file.endswith(".json"):   
                 with open(_file,'r') as f:
                     data=jsonpickle.decode(f.read())
@@ -479,7 +487,7 @@ class objdict(MutableMapping):
             if is_valid_dict(data):
                 return cls(data,_file=_file,_backend=_backend,_use_default=_use_default,_default=_default,_auto_self=_auto_self)
             else:
-                raise ValueError("The json data must be a valid dict to be deserialized into an objdict.")
+                raise ValueError("The serialized data must be a valid dict to be deserialized into an objdict.")
         else:
             raise ValueError("You must provide a valid file path before loading from a file.")
         
@@ -489,7 +497,7 @@ class objdict(MutableMapping):
         """
         self._backend=_backend or self._backend
         self._file = _file or self._file
-        if not self._backend in ['json','toml','jsonpickle']:
+        if not self._backend in ['json','toml','yaml','jsonpickle']:
             raise ValueError(f"Unsupported serialization backend: {self._backend}")
         
         if is_valid_path(self._file):
@@ -499,6 +507,9 @@ class objdict(MutableMapping):
             elif self._backend=='toml' and self._file.endswith('.toml'):
                 with open(self._file, 'w', encoding='utf-8') as f:
                     toml.dump(self.to_dict(), f)
+            elif self._backend=='yaml' and self._file.endswith('.yml'):
+                with open(self._file, 'w', encoding='utf-8') as f:
+                    yaml.dump(self.to_dict(), f)
             elif self._backend=='jsonpickle' and self._file.endswith('.json'):              
                 with open(self._file, 'w', encoding='utf-8') as f:
                     f.write(jsonpickle.encode(self.to_dict()))  

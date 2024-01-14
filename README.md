@@ -1,13 +1,13 @@
 # objdict-bf
 
-`objdict-bf` is a Python module that provides a wrapper class to conveniently manipulate dictionaries or dict-based json/toml nested structures using attribute-like syntax. It is intended mostly to ease manipulation of json/toml data, web requests and responses, configuration files, dynamic prototyping...
+`objdict-bf` is a Python module that provides a wrapper class to conveniently manipulate dictionaries or dict-based nested structures using attribute-like syntax. It is intended mostly to ease manipulation of serialized data, web requests and responses, configuration files, dynamic prototyping...
 
 ## Features
 
 - Attribute-style access to dictionary items (e.g., `obj.key` instead of `obj['key']`).
 - Synchronization with the original dictionary if passed at instantiation.
 - Utility methods for recursive conversion of nested structures to and from `objdict` and `dict`.
-- Serialization and deserialization methods for both strings and files with json, toml and jsonpickle backend support.
+- Serialization and deserialization methods for both strings and files with json, toml, yaml and jsonpickle backend support.
 - Advanced default value attribution features for missing keys. 
 - optional object-like behavior, by auto-passing the objdict instance as 'self' to callable attributes having 'self' in their signature.
 
@@ -27,9 +27,9 @@ Parameters:
 - `*args`: either dicts, objdicts or iterables on key:value pairs. If the first arg is a dict, it will serve as the internal _data_dict of the objdict instance.
 - `_use_default`: boolean, determines if a default value is attributed to missing keys
 - `_default`: can be any value or callable. If it is callable with adequate signature, this callable will be used to handle default values generation.
-- `_file`: reference to a json file path for dumping
-- `_backend`: either 'json', 'toml' or 'jsonpickle'. Determines the backend used for serialization/deserialization when dumping/loading (None defaults to 'json').
-- `_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable callable with 'self' in their signature (mocked object behavior).
+- `_file`: reference to a file path for dumping (extension must match the backend used)
+- `_backend`: either 'json', 'toml','yaml' or 'jsonpickle'. Determines the backend used for serialization/deserialization when dumping/loading (None defaults to 'json').
+- `_auto_self`: boolean. Determines if the instance is auto-passed a 'self' to its callable attributes having 'self' in their signature (mocked object behavior).
 - `**kwargs`: key value pairs passed as kwargs to update the objdict
 
 
@@ -121,7 +121,9 @@ data = objdict.load("my_json_file.json")
 #or
 data = objdict.load("my_toml_file.toml",_backend='toml')
 
-#class methods creating new instances can be passed parameters accepted in the objdict constructor to control the properties of the created instance:
+#Mismatching file extension and backend will throw an exception 
+
+#any class method creating a new instance can be passed parameters accepted in the objdict constructor to control the properties of the created instance:
 data = objdict.loads(string,_backend='json',_use_default=True,_default=None,_auto_self=False)
 data = objdict.load(file,_backend='toml',_use_default=False,_auto_self=True)
 
